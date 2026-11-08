@@ -20,3 +20,8 @@ export interface CriarProdutoRequest {
 }
 
 export type AtualizarProdutoRequest = Omit<CriarProdutoRequest, 'codigo'>
+
+export interface TipoProduto {
+  id: number
+  descricao: string
+}
