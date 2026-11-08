@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RegraNegocioException.class)
     public ProblemDetail tratarRegraNegocioException(RegraNegocioException exception) {
-        return criar(HttpStatus.UNPROCESSABLE_ENTITY, "Regra de negócio não respeitada", exception.getMessage());
+        return criar(HttpStatus.UNPROCESSABLE_CONTENT, "Regra de negócio não respeitada", exception.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

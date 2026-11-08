@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -59,6 +61,31 @@ public class Produto {
         this.tipo = tipoProduto;
         this.descricao = descricao;
         this.valorFornecedor = valorFornecedor;
+    }
+
+    public MovimentoEstoque registrarEntrada(int quantidade, LocalDateTime dataMovimentacao) {
+        validarQuantidade(quantidade);
+
+        MovimentoEstoque movimento = MovimentoEstoque.entrada(this, quantidade, dataMovimentacao);
+        this.quantidadeEstoque += quantidade;
+        return movimento;
+    }
+
+    public MovimentoEstoque registrarSaida(int quantidade, BigDecimal valorVenda, LocalDateTime dataMovimentacao) {
+        validarQuantidade(quantidade);
+        if (quantidade > this.quantidadeEstoque) {
+            throw new EstoqueInsuficienteException(this.codigo, this.quantidadeEstoque, quantidade);
+        }
+
+        MovimentoEstoque movimento = MovimentoEstoque.saida(this, quantidade, valorVenda, dataMovimentacao);
+        this.quantidadeEstoque -= quantidade;
+        return movimento;
+    }
+
+    private void validarQuantidade(int quantidade) {
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException("Quantidade deve ser maior que zero");
+        }
     }
 }
 
