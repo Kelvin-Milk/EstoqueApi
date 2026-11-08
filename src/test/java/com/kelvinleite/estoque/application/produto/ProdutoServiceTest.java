@@ -1,9 +1,8 @@
 package com.kelvinleite.estoque.application.produto;
 
 import com.kelvinleite.estoque.application.produto.dto.CriarProdutoRequest;
-import com.kelvinleite.estoque.domain.produto.CodigoProdutoDuplicadoException;
-import com.kelvinleite.estoque.domain.produto.ProdutoNaoEncontradoException;
-import com.kelvinleite.estoque.domain.produto.ProdutoRepository;
+import com.kelvinleite.estoque.domain.produto.*;
+import com.kelvinleite.estoque.domain.tipoproduto.TipoProduto;
 import com.kelvinleite.estoque.domain.tipoproduto.TipoProdutoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +28,9 @@ public class ProdutoServiceTest {
     @Mock
     private ProdutoMapper produtoMapper;
 
+    @Mock
+    private MovimentoEstoqueRepository movimentoEstoqueRepository;
+
     @InjectMocks
     private ProdutoService produtoService;
 
@@ -49,6 +51,19 @@ public class ProdutoServiceTest {
 
         assertThatThrownBy(() -> produtoService.excluir(99L))
                 .isInstanceOf(ProdutoNaoEncontradoException.class);
+
+        verify(produtoRepository, never()).delete(any());
+    }
+
+    @Test
+    void naoDeveExcluirProdutoComMovimentacoes() {
+        Produto produto = new Produto("NB-001", "Notebook", new TipoProduto("Eletrônico"), new BigDecimal("3000.00"));
+        when(produtoRepository.findById(1L)).thenReturn(Optional.of(produto));
+        when(movimentoEstoqueRepository.existsByProdutoId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> produtoService.excluir(1L))
+                .isInstanceOf(ProdutoComMovimentoException.class)
+                .hasMessageContaining("NB-001");
 
         verify(produtoRepository, never()).delete(any());
     }

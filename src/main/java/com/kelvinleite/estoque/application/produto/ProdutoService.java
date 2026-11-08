@@ -3,10 +3,7 @@ package com.kelvinleite.estoque.application.produto;
 import com.kelvinleite.estoque.application.produto.dto.AtualizarProdutoRequest;
 import com.kelvinleite.estoque.application.produto.dto.CriarProdutoRequest;
 import com.kelvinleite.estoque.application.produto.dto.ProdutoResponse;
-import com.kelvinleite.estoque.domain.produto.CodigoProdutoDuplicadoException;
-import com.kelvinleite.estoque.domain.produto.Produto;
-import com.kelvinleite.estoque.domain.produto.ProdutoNaoEncontradoException;
-import com.kelvinleite.estoque.domain.produto.ProdutoRepository;
+import com.kelvinleite.estoque.domain.produto.*;
 import com.kelvinleite.estoque.domain.tipoproduto.TipoProduto;
 import com.kelvinleite.estoque.domain.tipoproduto.TipoProdutoNaoEncontradoException;
 import com.kelvinleite.estoque.domain.tipoproduto.TipoProdutoRepository;
@@ -23,6 +20,7 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final TipoProdutoRepository tipoProdutoRepository;
+    private final MovimentoEstoqueRepository movimentoEstoqueRepository;
     private final ProdutoMapper produtoMapper;
 
     @Transactional
@@ -30,8 +28,8 @@ public class ProdutoService {
         if (produtoRepository.existsByCodigo(produtoRequest.codigo())) {
             throw new CodigoProdutoDuplicadoException(produtoRequest.codigo());
         }
-        TipoProduto tipo = buscarTipo(produtoRequest.tipoId());
 
+        TipoProduto tipo = buscarTipo(produtoRequest.tipoId());
         Produto produto = new Produto(produtoRequest.codigo(),
                 produtoRequest.descricao(),
                 tipo,
@@ -53,7 +51,13 @@ public class ProdutoService {
 
     @Transactional
     public void excluir(Long id) {
-        produtoRepository.delete(buscarProduto(id));
+        Produto produto = buscarProduto(id);
+
+        if (movimentoEstoqueRepository.existsByProdutoId(id)) {
+            throw new ProdutoComMovimentoException(produto.getCodigo());
+        }
+
+        produtoRepository.delete(produto);
     }
 
     public ProdutoResponse buscarPorId(Long id) {
