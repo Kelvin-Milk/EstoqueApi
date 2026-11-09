@@ -5,6 +5,16 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/produtos' },
     { path: '/produtos', name: 'produtos', component: () => import('@/views/ProdutosView.vue') },
+    {
+      path: '/relatorios/produtos-por-tipo',
+      name: 'produtos-por-tipo',
+      component: () => import('@/views/ProdutosPorTipoView.vue'),
+    },
+    {
+      path: '/relatorios/lucro-por-produto',
+      name: 'lucro-por-produto',
+      component: () => import('@/views/LucroPorProdutoView.vue'),
+    },
   ],
 })
 
