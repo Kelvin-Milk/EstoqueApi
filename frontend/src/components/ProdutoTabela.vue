@@ -19,6 +19,24 @@
           @click="emit('editar', data)"
         />
         <Button
+          icon="pi pi-arrow-down"
+          text
+          rounded
+          severity="success"
+          aria-label="Registrar entrada"
+          v-tooltip.top="'Entrada'"
+          @click="emit('entrada', data)"
+        />
+        <Button
+          icon="pi pi-arrow-up"
+          text
+          rounded
+          severity="warn"
+          aria-label="Registrar saída"
+          v-tooltip.top="'Saída'"
+          @click="emit('saida', data)"
+        />
+        <Button
           icon="pi pi-trash"
           text
           rounded
@@ -42,6 +60,8 @@ defineProps<{ produtos: Produto[]; carregando: boolean }>()
 const emit = defineEmits<{
   editar: [produto: Produto]
   excluir: [produto: Produto]
+  entrada: [produto: Produto]
+  saida: [produto: Produto]
 }>()
 
 const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })

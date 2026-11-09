@@ -10,6 +10,8 @@
       :carregando="carregando"
       @editar="editar"
       @excluir="confirmarExclusao"
+      @entrada="(p) => abrirMovimento(p, 'ENTRADA')"
+      @saida="(p) => abrirMovimento(p, 'SAIDA')"
     />
 
     <ProdutoFormulario
@@ -17,6 +19,12 @@
       :produto="produtoSelecionado"
       :tipos="tipos"
       @salvo="carregar"
+    />
+    <MovimentoDialog
+      v-model:visible="movimentoVisivel"
+      :produto="produtoSelecionado"
+      :tipo="tipoMovimento"
+      @registrado="carregar"
     />
   </section>
 </template>
@@ -41,7 +49,11 @@ import { useProdutos } from '@/composables/useProdutos'
 import { tipoProdutoApi } from '@/api/tipoProdutoApi'
 import { extrairErro } from '@/api/http'
 import type { Produto, TipoProduto } from '@/types/produto'
+import MovimentoDialog from '@/components/MovimentoDialog.vue'
+import type { TipoMovimentacao } from '@/types/movimento'
 
+const movimentoVisivel = ref(false)
+const tipoMovimento = ref<TipoMovimentacao>('ENTRADA')
 const { produtos, carregando, carregar, excluir } = useProdutos()
 const tipos = ref<TipoProduto[]>([])
 const formularioVisivel = ref(false)
@@ -89,5 +101,11 @@ function confirmarExclusao(produto: Produto) {
 function mostrarErro(erro: unknown) {
   const problema = extrairErro(erro)
   toast.add({ severity: 'error', summary: problema.title, detail: problema.detail, life: 5000 })
+}
+
+function abrirMovimento(produto: Produto, tipo: TipoMovimentacao) {
+  produtoSelecionado.value = produto
+  tipoMovimento.value = tipo
+  movimentoVisivel.value = true
 }
 </script>
