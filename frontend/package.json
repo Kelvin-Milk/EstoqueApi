@@ -16,7 +16,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
-    "@primevue/themes": "^4.5.4",
+    "@primeuix/themes": "^3.1.0",
     "axios": "^1.21.0",
     "pinia": "^4.0.3",
     "primeicons": "^8.0.2",
