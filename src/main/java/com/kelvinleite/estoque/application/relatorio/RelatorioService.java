@@ -1,5 +1,6 @@
 package com.kelvinleite.estoque.application.relatorio;
 
+import com.kelvinleite.estoque.application.relatorio.dto.LucroPorProdutoResponse;
 import com.kelvinleite.estoque.application.relatorio.dto.ProdutoPorTipoResponse;
 import com.kelvinleite.estoque.domain.produto.TipoMovimentacaoEstoque;
 import com.kelvinleite.estoque.domain.tipoproduto.TipoProdutoNaoEncontradoException;
@@ -23,5 +24,9 @@ public class RelatorioService {
             throw new TipoProdutoNaoEncontradoException(tipoId);
         }
         return relatorioRepository.buscarProdutosPorTipo(tipoId, TipoMovimentacaoEstoque.SAIDA);
+    }
+
+    public List<LucroPorProdutoResponse> lucroPorProduto() {
+        return relatorioRepository.buscarLucroPorProduto(TipoMovimentacaoEstoque.SAIDA);
     }
 }
