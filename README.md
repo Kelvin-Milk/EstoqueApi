@@ -2,7 +2,7 @@
 
 Aplicação full stack para controle de estoque, desenvolvida como desafio técnico. Permite cadastrar produtos, registrar entradas e saídas com validação de saldo e consultar estoque e lucro por produto.
 
-> **Status:** em desenvolvimento. Back-end com CRUD de produtos, movimentação de estoque e listagem de tipos concluídos; front-end em construção e consultas de estoque e lucro nas [próximas etapas](#próximas-etapas).
+> **Status:** requisitos do desafio concluídos (back-end, front-end e testes). Melhorias futuras em [próximas etapas](#próximas-etapas).
 
 ## Tecnologias
 
@@ -13,8 +13,8 @@ Aplicação full stack para controle de estoque, desenvolvida como desafio técn
 | Migrations | Flyway |
 | Mapeamento | MapStruct · Lombok |
 | Documentação da API | SpringDoc OpenAPI (Swagger UI) |
-| Testes do back-end | JUnit 5 · AssertJ · Mockito · MockMvc |
-| Front-end | Vue 3 · Vite · TypeScript · Vue Router · Pinia · Axios |
+| Testes do back-end | JUnit 5 · AssertJ · Mockito · MockMvc · `@DataJpaTest` |
+| Front-end | Vue 3 · Vite · TypeScript · PrimeVue 5 · Vue Router · Axios |
 | Build | Maven (wrapper incluído) · npm |
 
 ## Como executar
@@ -51,6 +51,14 @@ npm run dev
 ```
 
 O front-end sobe em `http://localhost:5173`. Em desenvolvimento, o Vite repassa as chamadas para `/api` ao back-end na porta 8080 (proxy), sem necessidade de configurar CORS.
+
+| Tela | O que faz |
+| --- | --- |
+| Produtos | Listagem, cadastro, edição e exclusão; entrada e saída de estoque direto pela tabela |
+| Produtos por tipo | Quantidade de saída e disponível por produto, com filtro opcional por tipo |
+| Lucro por produto | Quantidade total de saída e lucro total por produto |
+
+O front é organizado em camadas: `types` (contratos da API) → `api` (uma função por endpoint) → `composables` (estado e operações) → componentes. Os componentes não chamam o Axios diretamente, e erros de validação do `ProblemDetail` aparecem no campo correspondente.
 
 ## Endpoints
 
@@ -138,6 +146,44 @@ Na entrada, o corpo é apenas `{ "quantidade": 10 }` e o `valorVenda` vem nulo. 
 
 Carga inicial: `1` Eletrônico, `2` Eletrodoméstico, `3` Móvel.
 
+### Consultas — `/api/v1/relatorios`
+
+| Método | Rota | Descrição | Sucesso |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/relatorios/produtos-por-tipo?tipoId={id}` | Produtos com quantidade de saída e quantidade disponível. `tipoId` é opcional: sem ele, lista todos os tipos | `200 OK` |
+| `GET` | `/api/v1/relatorios/lucro-por-produto` | Quantidade total de saída e lucro total por produto | `200 OK` |
+
+**Exemplo de produtos por tipo:**
+
+```json
+[
+  {
+    "id": 1,
+    "codigo": "NB-001",
+    "descricao": "Notebook Dell Inspiron",
+    "tipo": "Eletrônico",
+    "quantidadeSaida": 4,
+    "quantidadeDisponivel": 6
+  }
+]
+```
+
+**Exemplo de lucro por produto:**
+
+```json
+[
+  {
+    "id": 1,
+    "codigo": "NB-001",
+    "descricao": "Notebook Dell Inspiron",
+    "quantidadeSaida": 4,
+    "totalLucro": 4000.00
+  }
+]
+```
+
+O lucro é calculado como **Σ (valor de venda − custo unitário) × quantidade** das saídas, usando o custo registrado em cada movimento. Produtos sem saída aparecem com quantidade e lucro zerados; venda abaixo do custo resulta em lucro negativo. Um `tipoId` inexistente responde `404`.
+
 ### Erros
 
 Todos os erros seguem o formato **`ProblemDetail` (RFC 9457)**:
@@ -195,12 +241,19 @@ O domínio não conhece HTTP nem JSON. Os services apenas orquestram: as regras 
 - **Valores monetários em `BigDecimal`** (`DECIMAL(15,2)` no banco), evitando os erros de arredondamento do `double`.
 - **Migrations como fonte de verdade.** O schema é definido pelo Flyway, com constraints nomeadas, `CHECK` (quantidade positiva, valor de venda obrigatório só na saída), índices e carga inicial. O Hibernate apenas valida o mapeamento (`ddl-auto: validate`).
 - **Sem N+1 na listagem.** O tipo é carregado em modo `LAZY`, e a listagem usa `@EntityGraph` para trazer tudo em uma única consulta.
+- **Migrations imutáveis.** Um bug do H2 com `CHECK (... IN (...))` após a migration do Flyway foi corrigido numa nova migration (`V3`), sem alterar a já aplicada.
 
 ### API
 - **DTOs separados por operação** (`record`), sem expor a entidade. O MapStruct faz o mapeamento entidade → resposta; a criação de entidades é explícita, para preservar as regras do domínio.
 - **Tratamento centralizado de erros** com `@RestControllerAdvice` e `ProblemDetail`: regras previsíveis respondem 422; conflitos imprevisíveis (concorrência, integridade) respondem 409. Nenhum detalhe interno é exposto ao cliente.
 - **Data da movimentação definida pelo servidor**, via `Clock` injetado (testável).
 - **API versionada** (`/api/v1`) e `open-in-view` desativado.
+
+### Consultas
+- **Leitura separada da escrita.** As alterações passam pelo agregado `Produto`, que protege as regras. As consultas ficam num repositório só de leitura (`RelatorioRepository`, que estende `Repository` sem `save`/`delete`), com projeção JPQL direto no DTO: uma única query agregada, sem carregar entidades e sem N+1.
+- **Produtos sem venda continuam no resultado.** O filtro de saída fica no `ON` do `left join`, não no `WHERE`, e o `coalesce` transforma a soma vazia em zero.
+- **Quantidade disponível vem do saldo do produto**, já mantido pelo agregado a cada movimento, sem recalcular entradas menos saídas.
+- **Filtro opcional como query param** (`?tipoId=`): path variable identifica recurso; filtro é parâmetro de consulta.
 
 ## Testes
 
@@ -214,6 +267,7 @@ O domínio não conhece HTTP nem JSON. Os services apenas orquestram: as regras 
 | Domínio | `ProdutoMovimentacaoEstoqueTest` | Entrada, saída, saldo insuficiente (incluindo o limite exato do saldo) e custo registrado |
 | Aplicação | `ProdutoServiceTest` | Orquestração do service com repositórios mockados (Mockito) |
 | Web | `ProdutoControllerTest` · `TipoProdutoControllerTest` | Contrato HTTP, validação e formato de erro (`@WebMvcTest`) |
+| Repositório | `RelatorioRepositoryTest` | Consultas agregadas no banco real com as migrations (`@DataJpaTest`): lucro com o custo de cada saída, produto sem venda, lucro negativo e filtro por tipo |
 | Integração | `EstoqueApiApplicationTests` | Subida completa da aplicação, migrations e mapeamento (smoke test) |
 
 ## Próximas etapas
@@ -221,9 +275,11 @@ O domínio não conhece HTTP nem JSON. Os services apenas orquestram: as regras 
 - [x] CRUD de produtos
 - [x] Registro de entrada e saída com validação de saldo e mensagem específica
 - [x] Listagem de tipos de produto
-- [ ] Consulta de produtos por tipo, com quantidade de saída e quantidade disponível
-- [ ] Consulta de lucro por produto (quantidade total de saída e lucro total)
-- [ ] Front-end: telas de produtos, movimentação e consultas
+- [x] Consulta de produtos por tipo, com quantidade de saída e quantidade disponível
+- [x] Consulta de lucro por produto (quantidade total de saída e lucro total)
+- [x] Front-end: telas de produtos, movimentação e consultas
+- [x] Testes unitários do domínio, services, controllers e consultas
+- [ ] Indicadores e gráfico na tela de lucro
 - [ ] Docker Compose com PostgreSQL
 - [ ] Pipeline de CI com GitHub Actions
 
