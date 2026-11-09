@@ -11,14 +11,17 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface RelatorioRepository extends Repository<Produto, Long> {
+
     @Query("""
             select new com.kelvinleite.estoque.application.relatorio.dto.ProdutoPorTipoResponse(
-                p.id, p.codigo, p.descricao, coalesce(sum(m.quantidade), 0L), p.quantidadeEstoque)
+                p.id, p.codigo, p.descricao, t.descricao,
+                coalesce(sum(m.quantidade), 0L), p.quantidadeEstoque)
             from Produto p
+            join p.tipo t
             left join MovimentoEstoque m on m.produto = p and m.tipo = :saida
-            where p.tipo.id = :tipoId
-            group by p.id, p.codigo, p.descricao, p.quantidadeEstoque
-            order by p.descricao
+            where (:tipoId is null or t.id = :tipoId)
+            group by p.id, p.codigo, p.descricao, t.descricao, p.quantidadeEstoque
+            order by t.descricao, p.descricao
             """)
     List<ProdutoPorTipoResponse> buscarProdutosPorTipo(@Param("tipoId") Long tipoId,
                                                        @Param("saida") TipoMovimentacaoEstoque saida);

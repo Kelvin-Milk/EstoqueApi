@@ -4,10 +4,7 @@ import com.kelvinleite.estoque.application.relatorio.RelatorioService;
 import com.kelvinleite.estoque.application.relatorio.dto.LucroPorProdutoResponse;
 import com.kelvinleite.estoque.application.relatorio.dto.ProdutoPorTipoResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -18,8 +15,8 @@ public class RelatorioController {
 
     private final RelatorioService relatorioService;
 
-    @GetMapping("/produtos-por-tipo/{tipoId}")
-    public List<ProdutoPorTipoResponse> produtosPorTipo(@PathVariable Long tipoId) {
+    @GetMapping("/produtos-por-tipo")
+    public List<ProdutoPorTipoResponse> produtosPorTipo(@RequestParam(required = false) Long tipoId) {
         return relatorioService.produtosPorTipo(tipoId);
     }
 

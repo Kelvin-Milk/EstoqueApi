@@ -114,6 +114,26 @@ public class RelatorioRepositoryTest {
                         tuple("NB-001", 3L, 7));
     }
 
+    @Test
+    @DisplayName("Deve listar produtos de todos os tipos quando o tipo não for informado")
+    void deveListarTodosQuandoTipoNaoInformado() {
+        Produto notebook = criarProduto("NB-001", "Notebook", eletronico, "10.00");
+        entrada(notebook, 10);
+        saida(notebook, 3, "15.00");
+
+        Produto mesa = criarProduto("ME-001", "Mesa", movel, "200.00");
+        entrada(mesa, 4);
+
+        List<ProdutoPorTipoResponse> resultado =
+                relatorioRepository.buscarProdutosPorTipo(null, TipoMovimentacaoEstoque.SAIDA);
+
+        assertThat(resultado)
+                .extracting(ProdutoPorTipoResponse::codigo, ProdutoPorTipoResponse::tipo)
+                .containsExactlyInAnyOrder(
+                        tuple("NB-001", "Eletrônico Teste"),
+                        tuple("ME-001", "Móvel Teste"));
+    }
+
     private Produto criarProduto(String codigo, String descricao, TipoProduto tipo, String valorFornecedor) {
         return entityManager.persist(new Produto(codigo, descricao, tipo, new BigDecimal(valorFornecedor)));
     }

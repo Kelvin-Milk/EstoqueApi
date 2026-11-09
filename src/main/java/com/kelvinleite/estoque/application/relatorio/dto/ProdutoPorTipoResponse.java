@@ -4,6 +4,7 @@ public record ProdutoPorTipoResponse(
         Long id,
         String codigo,
         String descricao,
+        String tipo,
         long quantidadeSaida,
         int quantidadeDisponivel
 ) {

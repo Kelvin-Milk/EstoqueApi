@@ -20,7 +20,7 @@ public class RelatorioService {
     private final TipoProdutoRepository tipoProdutoRepository;
 
     public List<ProdutoPorTipoResponse> produtosPorTipo(Long tipoId) {
-        if (!tipoProdutoRepository.existsById(tipoId)) {
+        if (tipoId != null && !tipoProdutoRepository.existsById(tipoId)) {
             throw new TipoProdutoNaoEncontradoException(tipoId);
         }
         return relatorioRepository.buscarProdutosPorTipo(tipoId, TipoMovimentacaoEstoque.SAIDA);
