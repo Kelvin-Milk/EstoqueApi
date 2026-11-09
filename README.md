@@ -19,6 +19,22 @@ Aplicação full stack para controle de estoque, desenvolvida como desafio técn
 
 ## Como executar
 
+### Com Docker (aplicação completa + PostgreSQL)
+
+**Pré-requisito:** Docker com Compose.
+
+```bash
+docker compose up --build
+```
+
+| Serviço | URL |
+| --- | --- |
+| Front-end | http://localhost:8081 |
+| API / Swagger | http://localhost:8080/swagger-ui.html |
+| PostgreSQL | `localhost:5433` (banco `estoque`, usuário e senha `estoque`) |
+
+O banco fica exposto na porta **5433** para não conflitar com um PostgreSQL instalado localmente; dentro da rede do Docker, a API acessa `db:5432`. Os dados persistem no volume `pgdata` (`docker compose down -v` apaga tudo). Sem Docker, a aplicação roda com H2 em memória, conforme abaixo.
+
 ### Back-end
 
 **Pré-requisito:** JDK 21. Não é preciso instalar Maven nem banco de dados.
@@ -241,6 +257,7 @@ O domínio não conhece HTTP nem JSON. Os services apenas orquestram: as regras 
 - **Valores monetários em `BigDecimal`** (`DECIMAL(15,2)` no banco), evitando os erros de arredondamento do `double`.
 - **Migrations como fonte de verdade.** O schema é definido pelo Flyway, com constraints nomeadas, `CHECK` (quantidade positiva, valor de venda obrigatório só na saída), índices e carga inicial. O Hibernate apenas valida o mapeamento (`ddl-auto: validate`).
 - **Sem N+1 na listagem.** O tipo é carregado em modo `LAZY`, e a listagem usa `@EntityGraph` para trazer tudo em uma única consulta.
+- **Mesmas migrations em H2 e PostgreSQL.** O H2 roda em modo PostgreSQL no desenvolvimento; no Docker, as mesmas migrations são aplicadas no PostgreSQL 18 e o `ddl-auto: validate` confirma o mapeamento nos dois.
 - **Migrations imutáveis.** Um bug do H2 com `CHECK (... IN (...))` após a migration do Flyway foi corrigido numa nova migration (`V3`), sem alterar a já aplicada.
 
 ### API
@@ -280,7 +297,7 @@ O domínio não conhece HTTP nem JSON. Os services apenas orquestram: as regras 
 - [x] Front-end: telas de produtos, movimentação e consultas
 - [x] Testes unitários do domínio, services, controllers e consultas
 - [ ] Indicadores e gráfico na tela de lucro
-- [ ] Docker Compose com PostgreSQL
+- [x] Docker Compose com PostgreSQL
 - [ ] Pipeline de CI com GitHub Actions
 
 ## Uso de IA
